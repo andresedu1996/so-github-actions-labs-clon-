@@ -1,29 +1,45 @@
-name: Docker Container Action
+name: Docker Container Workflow
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    paths:
+      - "Dockerfile"
+      - "container-script.sh"
+      - ".github/workflows/docker-container-action.yml"
+  workflow_dispatch:
 
 jobs:
-  docker-job:
+  docker:
     runs-on: ubuntu-latest
-    
+    env:
+      APP_MESSAGE: "Hola desde el runner de GitHub Actions"
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build Docker Image
-        run: docker build -t my-container .
+      - name: Build Docker image
+        run: docker build -t so-gha-demo .
 
-      - name: Run Container
-        run: docker run --name demo -d my-container
+      - name: Create host directory for volume
+        run: mkdir -p host-data
 
-      - name: Show Running Containers
-        run: docker ps -a
+      - name: Run container with volume and env var
+        run: |
+          docker run --name so-demo \
+            -e APP_MESSAGE="$APP_MESSAGE" \
+            -v ${{ github.workspace }}/host-data:/app/output \
+            so-gha-demo
 
-      - name: Monitor Container Resources (stats)
-        run: docker stats --no-stream
+      - name: Show file written by container (container → host)
+        run: |
+          echo "=== Contenido de host-data/message.txt ==="
+          cat host-data/message.txt
 
-      - name: Communicate with container
-        run: docker exec demo echo "Mensaje desde el host"
+      - name: Monitor container resources (CPU/Mem)
+        run: docker stats --no-stream so-demo
 
-      - name: Stop Container
-        run: docker stop demo
+      - name: Stop and remove container
+        run: |
+          docker stop so-demo
+          docker rm so-demo

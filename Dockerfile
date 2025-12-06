@@ -1,2 +1,8 @@
 FROM alpine:latest
-CMD ["sh", "-c", "echo Hola desde Docker! && sleep 10"]
+
+WORKDIR /app
+
+COPY container-script.sh /app/container-script.sh
+RUN chmod +x /app/container-script.sh
+
+CMD ["/app/container-script.sh"]
