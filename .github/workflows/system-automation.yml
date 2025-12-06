@@ -1,6 +1,11 @@
 name: System Automation
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    paths:
+      - ".github/workflows/system-automation.yml"
+      - "scripts/**"
+  workflow_dispatch:
 
 jobs:
   automation:
@@ -8,20 +13,34 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      NORMAL_ENV: "Variable normal visible en los scripts"
 
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Run Linux Script
-        if: runner.os == 'Linux'
-        run: bash scripts/linux-script.sh
-      
-      - name: Run Windows Script
-        if: runner.os == 'Windows'
-        run: powershell ./scripts/windows-script.ps1
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Upload Artifacts
+      - name: Create artifacts directory
+        run: mkdir -p artifacts
+
+      - name: Make Linux script executable
+        if: runner.os == 'Linux'
+        run: chmod +x scripts/linux-system.sh
+
+      - name: Run Linux script
+        if: runner.os == 'Linux'
+        env:
+          MY_SECRET: ${{ secrets.MY_SECRET }}   # <- secreto
+        run: scripts/linux-system.sh
+
+      - name: Run Windows script
+        if: runner.os == 'Windows'
+        env:
+          MY_SECRET: ${{ secrets.MY_SECRET }}   # <- secreto
+        run: powershell -ExecutionPolicy Bypass -File scripts/windows-system.ps1
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: automation-output
-          path: artifacts/
+          name: system-automation-${{ matrix.os }}
+          path: artifacts
